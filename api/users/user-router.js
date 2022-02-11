@@ -20,6 +20,7 @@ router.get('/:id', checkUserId, (req, res, next) => {
     .catch(next)
 })
 
+// STEP 3 - TRANSFORM THE DATA WITH RAW JS
 router.get('/:id/posts', checkUserId, (req, res, next) => {
   User.findPosts(req.params.id)
     .then(posts => {
