@@ -1,3 +1,4 @@
+const res = require('express/lib/response')
 const db = require('../../data/db-config.js')
 
 module.exports = {
@@ -8,7 +9,7 @@ module.exports = {
   remove
 }
 
-function findPosts(user_id) {
+async function findPosts(user_id) {
   /*
     Implement so it resolves this structure:
 
@@ -21,10 +22,29 @@ function findPosts(user_id) {
       etc
     ]
   */
+
+  // STEP 1 - DEISGN QUERY IN SQLITE STUDIO
+
+  // SELECT
+  //    p.id as post_id,
+  //    p.contents,
+  //    u.username
+  // FROM users AS u
+  // LEFT JOIN posts AS p ON u.id = p.user_id
+  // WHERE u.id = 1;
+
+  // STEP 2 - FIND OUT HOW TO WRITE IT IN KNEX
+  const rows = await db('users as u')
+    .join('posts as p', 'u.id', 'p.user_id')
+    .select('p.id as post_id', 'p.contents', 'u.username')
+    .where('u.id', user_id)
+
+  return rows
+
+  // STEP 3 - TRANSFORM DATA WITH RAW JS (IN user-router)
 }
 
-function find() {
-  return db('users')
+async function find() {
   /*
     Improve so it resolves this structure:
 
@@ -42,10 +62,17 @@ function find() {
         etc
     ]
   */
+  const rows =  db('posts as p')
+    .join('users as u', 'u.id', 'p.user_id')
+    .select(['u.id as user_id', 'u.username'])
+    .count('p.user_id as post_count')
+    .whereNotNull('p.user_id')
+    .groupBy('username')
+
+  return rows
 }
 
-function findById(id) {
-  return db('users').where({ id }).first()
+async function findById(id) {
   /*
     Improve so it resolves this structure:
 
@@ -61,6 +88,18 @@ function findById(id) {
       ]
     }
   */
+  const rows = await db('users as u')
+    .leftJoin('posts as p', 'u.id', 'p.user_id')
+    .select('u.username', 'u.id as user_id', 'p.id as post_id', 'p.contents')
+    .where('u.id', id)
+
+  const result = {
+    username: rows[0].username,
+    user_id: rows[0].user_id,
+    posts: rows[0].post_id ? rows.map(row => ({ post_id: row.post_id, contents: row.contents })) : []
+  }
+
+  return result
 }
 
 function add(user) {
